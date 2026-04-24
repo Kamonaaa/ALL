@@ -1,0 +1,2 @@
+Hello world (up) and universe (cap, 1)
+I have a apple (hex) and a (bin) 1010 (low)
