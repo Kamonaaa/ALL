@@ -1,4 +1,4 @@
-package main
+package student
 
 import "fmt"
 
@@ -31,6 +31,6 @@ func (g *Grid) Get(r, c int) int {
 func main() {
 	g := NewGrid(3, 3)
 	g.Set(1, 2, 42)
-	
+
 	fmt.Printf("Value at (1,2): %d\n", g.Get(1, 2))
 }
