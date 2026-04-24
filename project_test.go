@@ -1,126 +1,95 @@
-// main_test.go
 package main
 
-import (
-	"os"
-	"reflect"
-	"testing"
-)
+import "testing"
 
-// ---------- Unit Tests ----------
+func run(input string) string {
+	return format(process(tokenize(input)))
+}
 
-func TestTokenize(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  []string
-	}{
-		{
-			name:  "simple words",
-			input: "hello world",
-			want:  []string{"hello", "world"},
-		},
-		{
-			name:  "punctuation",
-			input: "Hello, world!",
-			want:  []string{"Hello", ",", "world", "!"},
-		},
-		{
-			name:  "modifier token",
-			input: "Hello (up)",
-			want:  []string{"Hello", "(up)"},
-		},
-		{
-			name:  "contraction",
-			input: "don't",
-			want:  []string{"don't"},
-		},
-		{
-			name:  "quotes",
-			input: "'hello'",
-			want:  []string{"'", "hello", "'"},
-		},
+func TestProjectCases(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"Simply add 42 (hex) and 10 (bin) and you will see the result is 68.", "Simply add 66 and 2 and you will see the result is 68."},
+		{"Ready set go (up)!", "Ready set GO!"},
+		{"I should stop SHOUTING (low)", "I should stop shouting"},
+		{"welcome to brooklyn bridge (cap)", "welcome to brooklyn Bridge"},
+		{"This is so exciting (up, 2)", "This is so EXCITING"},
+		{"hello world (up,2)", "HELLO WORLD"},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := tokenize(tt.input)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("got %v, want %v", got, tt.want)
-			}
-		})
+	for _, tc := range cases {
+		got := run(tc.in)
+		if got != tc.want {
+			t.Errorf("input=%q\nwant=%q\ngot =%q", tc.in, tc.want, got)
+		}
 	}
 }
 
-// Test the modifier pipeline on a small sentence
-func TestProcessAndFormat(t *testing.T) {
-	input := "hello world (up) and universe (cap, 1)"
-	tokens := tokenize(input)
-	processed := process(tokens)
-	result := format(processed)
-	expected := "HELLO WORLD and Universe"
-	if result != expected {
-		t.Errorf("got %q, want %q", result, expected)
+func TestPunctuation(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"hello , world !", "hello, world!"},
+		{"I was thinking ... You were right", "I was thinking... You were right"},
+		{"what ! ?", "what!?"},
+		{"Wait . . . now", "Wait... now"},
+	}
+	for _, tc := range cases {
+		if got := run(tc.in); got != tc.want {
+			t.Errorf("%q => %q (want %q)", tc.in, got, tc.want)
+		}
 	}
 }
 
-// ---------- Integration Test with Golden File ----------
-
-func TestFullProgram(t *testing.T) {
-	// Save original args to restore later
-	origArgs := os.Args
-	defer func() { os.Args = origArgs }()
-
-	// Create a temporary output file
-	tmpFile, err := os.CreateTemp("", "textmod-output-*.txt")
-	if err != nil {
-		t.Fatal(err)
+func TestQuotesAndApostrophes(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"I am ' awesome ' !", "I am 'awesome'!"},
+		{"He said ' I am ready now '", "He said 'I am ready now'"},
+		{"don't stop", "don't stop"},
+		{"rock ' n ' roll", "rock 'n' roll"},
 	}
-	defer os.Remove(tmpFile.Name()) // clean up after test
-	tmpFile.Close()                 // main will open it via WriteFile
-
-	// Simulate command-line arguments: program name, input file, output file
-	os.Args = []string{"textmod", "testdata/input.txt", tmpFile.Name()}
-
-	// Run the actual main
-	main()
-
-	// Read the generated output
-	gotBytes, err := os.ReadFile(tmpFile.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(gotBytes)
-
-	// Read the expected output
-	wantBytes, err := os.ReadFile("testdata/expected.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := string(wantBytes)
-
-	if got != want {
-		// Write the actual output to a file for manual inspection
-		debugFile := "testdata/actual_output.txt"
-		os.WriteFile(debugFile, gotBytes, 0644)
-		t.Errorf("output mismatch.\ngot:  %s\nwant: %s\nActual output saved to %s for inspection.",
-			got, want, debugFile)
+	for _, tc := range cases {
+		if got := run(tc.in); got != tc.want {
+			t.Errorf("%q => %q (want %q)", tc.in, got, tc.want)
+		}
 	}
 }
 
-// ---------- Optional: Helper to See Output in a Text File ----------
-// This test simply runs the program and writes the result to a known file,
-// so you can open it and see the result. It's not a strict pass/fail test.
-func TestOutputToFileForVisualInspection(t *testing.T) {
-	input := "hello world (up) and universe (cap, 1)"
-	tokens := tokenize(input)
-	processed := process(tokens)
-	result := format(processed)
-
-	// Write to a file you can open manually
-	outPath := "testdata/visual_inspection.txt"
-	err := os.WriteFile(outPath, []byte(result), 0644)
-	if err != nil {
-		t.Fatal(err)
+func TestArticles(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"a apple", "an apple"},
+		{"A hour", "An hour"},
+		{"a banana", "a banana"},
+		{"a honest man", "an honest man"},
 	}
-	t.Logf("Output written to %s: %s", outPath, result)
+	for _, tc := range cases {
+		if got := run(tc.in); got != tc.want {
+			t.Errorf("%q => %q (want %q)", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestSafetyAndInvalidInputs(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"(up) hello", "hello"},
+		{"GG (hex)", "GG"},
+		{"102 (bin)", "102"},
+		{"hello world (dance,4)", "hello world (dance,4)"},
+		{"hello world (up,0)", "hello WORLD"},
+		{"hello world (up,-3)", "hello WORLD"},
+		{"hello (up", "hello (up"},
+	}
+	for _, tc := range cases {
+		if got := run(tc.in); got != tc.want {
+			t.Errorf("%q => %q (want %q)", tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestUnicode(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"éclair (cap)", "Éclair"},
+		{"straße (up)", "STRAßE"},
+	}
+	for _, tc := range cases {
+		if got := run(tc.in); got != tc.want {
+			t.Errorf("%q => %q (want %q)", tc.in, got, tc.want)
+		}
+	}
 }
