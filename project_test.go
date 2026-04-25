@@ -12,7 +12,7 @@ func TestProjectCases(t *testing.T) {
 		{"Ready set go (up)!", "Ready set GO!"},
 		{"I should stop SHOUTING (low)", "I should stop shouting"},
 		{"welcome to brooklyn bridge (cap)", "welcome to brooklyn Bridge"},
-		{"This is so exciting (up, 2)", "This is so EXCITING"},
+		{"This is so exciting (up, 2)", "This is SO EXCITING"},
 		{"hello world (up,2)", "HELLO WORLD"},
 	}
 	for _, tc := range cases {
