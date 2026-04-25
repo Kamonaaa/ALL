@@ -1,9 +1,3 @@
-Hello world (up) and universe (cap, 1)
-
-I have a apple (hex) and a (bin) 1010 (low)
-
-He said ' wow ! ? '
-
 hello world (up, 10)
 
 GG (hex)
@@ -23,7 +17,7 @@ don't stop believing
 éclair (cap)
 
 
-ÇA VA (low)
+ÇA VA ( low , 2 )
 
 
 hello (up,-5)

@@ -235,29 +235,33 @@ func mergePunctuation(tokens []string) []string {
 	var out []string
 
 	for i := 0; i < len(tokens); i++ {
-		r, _ := utf8.DecodeRuneInString(tokens[i])
+		tok := tokens[i]
 
-		if strings.ContainsRune(".,!?;:", r) {
-			group := tokens[i]
+		if len(tok) == 0 {
+			out = append(out, tok)
+			continue
+		}
+
+		firstByte := tok[0]
+
+		if strings.ContainsAny(string(firstByte), ".,!?;:") {
+			group := tok
 			j := i + 1
-
 			for j < len(tokens) {
-				r2, _ := utf8.DecodeRuneInString(tokens[j])
-				if strings.ContainsRune(".,!?;:", r2) {
-					group += tokens[j]
+				next := tokens[j]
+				if len(next) > 0 && strings.ContainsAny(string(next[0]), ".,!?;:") {
+					group += next
 					j++
 				} else {
 					break
 				}
 			}
-
 			out = append(out, group)
 			i = j - 1
 		} else {
-			out = append(out, tokens[i])
+			out = append(out, tok)
 		}
 	}
-
 	return out
 }
 
@@ -266,7 +270,7 @@ func fixArticles(tokens []string) []string {
 		word := tokens[i]
 		next := tokens[i+1]
 
-		if strings.ToLower(word) != "a" {
+		if word != "a" && word != "A" {
 			continue
 		}
 
@@ -275,9 +279,13 @@ func fixArticles(tokens []string) []string {
 			continue
 		}
 
-		first, _ := utf8.DecodeRuneInString(clean)
+		firstByte := clean[0]
 
-		if strings.ContainsRune("aeiouh", unicode.ToLower(first)) {
+		if firstByte >= 'A' && firstByte <= 'Z' {
+			firstByte += 32
+		}
+
+		if strings.ContainsAny(string(firstByte), "aeiouh") {
 			if word == "A" {
 				tokens[i] = "An"
 			} else {
@@ -293,21 +301,17 @@ func buildString(tokens []string) string {
 	if len(tokens) == 0 {
 		return ""
 	}
-
 	var b strings.Builder
 	b.WriteString(tokens[0])
-
 	for i := 1; i < len(tokens); i++ {
-		r, _ := utf8.DecodeRuneInString(tokens[i])
-
-		if strings.ContainsRune(".,!?;:", r) {
-			b.WriteString(tokens[i])
+		tok := tokens[i]
+		if len(tok) > 0 && strings.ContainsAny(string(tok[0]), ".,!?;:") {
+			b.WriteString(tok)
 		} else {
 			b.WriteByte(' ')
-			b.WriteString(tokens[i])
+			b.WriteString(tok)
 		}
 	}
-
 	return b.String()
 }
 
@@ -336,7 +340,7 @@ func main() {
 	processed := process(tokens)
 	result := format(processed)
 
-	err = os.WriteFile(os.Args[2], []byte(result), 0644)
+	err = os.WriteFile(os.Args[2], []byte(result), 0o644)
 	if err != nil {
 		println("write error:", err.Error())
 		return
