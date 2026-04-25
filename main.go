@@ -37,7 +37,9 @@ func tokenize(text string) []string {
 				i = j + 1
 				continue
 			}
+			i += size
 			word.WriteRune(r)
+			continue
 
 		case r == '\'':
 			if word.Len() > 0 && i+size < len(text) {
