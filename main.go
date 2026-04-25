@@ -322,11 +322,13 @@ func format(tokens []string) string {
 
 func main() {
 	if len(os.Args) != 3 {
+		println("usage: go run . input.txt output.txt")
 		return
 	}
 
 	data, err := os.ReadFile(os.Args[1])
 	if err != nil {
+		println("read error:", err.Error())
 		return
 	}
 
@@ -334,5 +336,11 @@ func main() {
 	processed := process(tokens)
 	result := format(processed)
 
-	os.WriteFile(os.Args[2], []byte(result), 0644)
+	err = os.WriteFile(os.Args[2], []byte(result), 0644)
+	if err != nil {
+		println("write error:", err.Error())
+		return
+	}
+
+	println("done")
 }
